@@ -1,17 +1,18 @@
 ''' Coffee Shop Sales: Dashboard '''
+import calendar
 import streamlit as st
 import pandas as pd
-import calendar
 import vis
 
 st.set_page_config(page_title="Coffee Shop Sales: Dashboard", layout='wide')
 
 @st.cache_data
 def load_data(path):
-    """Load the sales data from an Excel file."""
-    return pd.read_excel(path, engine='openpyxl')
+    """Load the sales data from a Csv file."""
+    return pd.read_csv(path)
 
-df = load_data("CoffeeShopSales.xlsx")
+df = load_data("./CoffeeShopSales.csv")
+df['transaction_date'] = pd.to_datetime(df['transaction_date'], format='%d-%m-%Y')
 
 # Sidebar Filters
 
