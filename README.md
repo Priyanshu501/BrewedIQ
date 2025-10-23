@@ -25,7 +25,7 @@ The dashboard allows users to filter the entire dataset by **store location** an
 
 All visualizations are created using Plotly for a clean, interactive experience.
 
-![Dashboard Screenshot](screenshots\dashboard.png)
+![Dashboard Screenshot](screenshots/dashboard.png)
 
 ## Key Features
 
