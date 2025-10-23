@@ -102,70 +102,75 @@ with tab[0]:
         )
 
     if data_option == 'Sales':
-        feature = 'total_amount'
+        FEATURE = 'total_amount'
 
     elif data_option == 'Transactions':
-        feature = 'transaction_id'
+        FEATURE = 'transaction_id'
 
     elif data_option == 'Ticket Size':
-        feature = 'transaction_qty'
+        FEATURE = 'transaction_qty'
+    else:
+        FEATURE = 'total_amount'
 
     if granularity == 'Daily':
-        if feature == 'total_amount' or feature == 'transaction_qty':
+        if FEATURE == 'total_amount' or FEATURE == 'transaction_qty':
             data = filtered_data.groupby(
                 filtered_data['transaction_date'].dt.to_period('D')
-            )[feature].sum()
-        if feature == 'transaction_id':
+            )[FEATURE].sum()
+        if FEATURE == 'transaction_id':
             data = filtered_data.groupby(
                 filtered_data['transaction_date'].dt.to_period('D')
-            )[feature].nunique()
+            )[FEATURE].nunique()
 
 
     elif granularity == 'Weekly':
-        if feature == 'total_amount' or feature == 'transaction_qty':
+        if FEATURE == 'total_amount' or FEATURE == 'transaction_qty':
             data = filtered_data.groupby(
                 filtered_data['transaction_date'].dt.to_period('W')
-            )[feature].sum()
-        if feature == 'transaction_id':
+            )[FEATURE].sum()
+        if FEATURE == 'transaction_id':
             data = filtered_data.groupby(
                 filtered_data['transaction_date'].dt.to_period('W')
-            )[feature].nunique()
+            )[FEATURE].nunique()
 
     elif granularity == 'Monthly':
-        if feature == 'total_amount' or feature == 'transaction_qty':
+        if FEATURE == 'total_amount' or FEATURE == 'transaction_qty':
             data = filtered_data.groupby(
                 filtered_data['transaction_date'].dt.to_period('M')
-            )[feature].sum()
-        if feature == 'transaction_id':
+            )[FEATURE].sum()
+        if FEATURE == 'transaction_id':
             data = filtered_data.groupby(
                 filtered_data['transaction_date'].dt.to_period('M')
-            )[feature].nunique()
-
+            )[FEATURE].nunique()
+    else:
+        data = filtered_data.groupby(
+                filtered_data['transaction_date'].dt.to_period('M')
+            )[FEATURE].sum()
 
     graphs = st.columns([0.6, 0.4], gap='medium')
-    
+
     with graphs[0]:
         st.plotly_chart(
-            vis.bar_chart(data, granularity, feature),
+            vis.bar_chart(data, granularity, FEATURE), #pylint: disable=used-before-assignment
             use_container_width=True
         )
 
     with graphs[1]:
         with st.container():
             st.plotly_chart(
-                vis.line_chart(data, granularity, feature),
+                vis.line_chart(data, granularity, FEATURE),
                 use_container_width=True
-            )                
+            )
 
         with st.container():
             st.plotly_chart(
-                vis.growth_chart(data, granularity, feature),
+                vis.growth_chart(data, granularity, FEATURE),
                 use_container_width=True
             )
 
 with tab[1]:
     st.header('Time of Day Analysis')
-    
+
     # Radio button
     data_option = st.radio(
         'Select Data Type:',
@@ -173,39 +178,57 @@ with tab[1]:
         horizontal=True,
         key='Time_Analysis'
     )
-    
+
     if data_option == 'Sales':
-    
+
         # Average Sales by Weekday
         filtered_data['weekday'] = filtered_data['transaction_date'].dt.day_name()
-        daywisesales = filtered_data.groupby([filtered_data['transaction_date'].dt.date, 'weekday'])['total_amount'].sum().reset_index()
+        daywisesales = filtered_data.groupby(
+            [filtered_data['transaction_date'].dt.date, 'weekday']
+        )['total_amount'].sum().reset_index()
         average_daywisesales = daywisesales.groupby('weekday')['total_amount'].mean()
         weekday_order = list(calendar.day_name)
         average_daywisesales = average_daywisesales.reindex(weekday_order)
-        
+
         # Average Sales by Hour of Day
-        filtered_data['transaction_time'] = pd.to_datetime(filtered_data['transaction_time'], format='%H:%M:%S').dt.time
-        filtered_data['transaction_hour'] = pd.to_datetime(filtered_data['transaction_time'], format='%H:%M:%S').dt.hour
-        hourly_sales = filtered_data.groupby([filtered_data['transaction_date'].dt.date, 'transaction_hour'])['total_amount'].sum().reset_index()
+        filtered_data['transaction_time'] = pd.to_datetime(
+            filtered_data['transaction_time'],
+            format='%H:%M:%S'
+        ).dt.time
+        filtered_data['transaction_hour'] = pd.to_datetime(
+            filtered_data['transaction_time'],
+            format='%H:%M:%S'
+        ).dt.hour
+        hourly_sales = filtered_data.groupby(
+            [filtered_data['transaction_date'].dt.date, 'transaction_hour']
+        )['total_amount'].sum().reset_index()
         average_hourly_sales = hourly_sales.groupby('transaction_hour')['total_amount'].mean()
-        
+
     if data_option == 'Transactions':
-        
+
         # Average Sales by Weekday
         filtered_data['weekday'] = filtered_data['transaction_date'].dt.day_name()
-        daywisesales = filtered_data.groupby([filtered_data['transaction_date'].dt.date, 'weekday']).size().reset_index(name='total_transactions')
+        daywisesales = filtered_data.groupby(
+            [filtered_data['transaction_date'].dt.date,'weekday']
+        ).size().reset_index(name='total_transactions')
         average_daywisesales = daywisesales.groupby('weekday')['total_transactions'].mean()
         weekday_order = list(calendar.day_name)
         average_daywisesales = average_daywisesales.reindex(weekday_order)
-        
+
         # Average Sales by Hour of Day
-        filtered_data['transaction_time'] = pd.to_datetime(filtered_data['transaction_time'], format='%H:%M:%S').dt.time
-        filtered_data['transaction_hour'] = pd.to_datetime(filtered_data['transaction_time'], format='%H:%M:%S').dt.hour
-        hourly_sales = filtered_data.groupby([filtered_data['transaction_date'].dt.date, 'transaction_hour']).size().reset_index(name='total_transactions')
+        filtered_data['transaction_time'] = pd.to_datetime(
+            filtered_data['transaction_time'], format='%H:%M:%S'
+        ).dt.time
+        filtered_data['transaction_hour'] = pd.to_datetime(
+            filtered_data['transaction_time'], format='%H:%M:%S'
+        ).dt.hour
+        hourly_sales = filtered_data.groupby(
+            [filtered_data['transaction_date'].dt.date, 'transaction_hour']
+        ).size().reset_index(name='total_transactions')
         average_hourly_sales = hourly_sales.groupby('transaction_hour')['total_transactions'].mean()
-    
+
     graphs = st.columns([0.5, 0.5], gap='medium')
-    
+
     with graphs[0]:
         # Average Sales by Weekday
         st.plotly_chart(
@@ -216,10 +239,10 @@ with tab[1]:
     with graphs[1]:
         # Average Sales by Hour of Day
         st.plotly_chart(
-            vis.avg_sales_by_hourofday(average_hourly_sales, data_option),
+            vis.avg_sales_by_hourofday(average_hourly_sales, data_option), #pylint: disable=possibly-used-before-assignment
             use_container_width=True
         )
-        
+
         # Average Sales by Hour of Day (Product category)
         st.plotly_chart(
             vis.avg_sales_by_hourofday_product(filtered_data, data_option),
@@ -228,7 +251,7 @@ with tab[1]:
 
 with tab[2]:
     st.header('Top Products')
-    
+
     # Radio Buttons
     data_option = st.radio(
         'Select Data Type:',
@@ -236,7 +259,7 @@ with tab[2]:
         horizontal=True,
         key='Top_Products'
     )
-    
+
     if data_option == 'Sales':
 
         # Top Selling Product Category Distribution (Sales)
@@ -244,42 +267,42 @@ with tab[2]:
 
         # Product Type Sales Distribution
         grouped = filtered_data.groupby(['product_category', 'product_type'])['total_amount'].sum()
-        
+
         # Top Selling Products
         top_products = filtered_data.groupby('product_type')['total_amount'].sum().sort_values(
             ascending=False
         ).head().reset_index(
             name='Total Sales'
         )
-        
+
     elif data_option == 'Transactions':
-        
+
         # Top Selling Product Category Distribution (Transactions)
         category_distribution = filtered_data.groupby('product_category').size()
 
         # Product Type Sales Distribution
         grouped = filtered_data.groupby(['product_category', 'product_type']).size()
-        
+
         # Top Selling Products
         top_products = filtered_data.groupby('product_type')['transaction_qty'].sum().sort_values(
             ascending=False
         ).head().reset_index(
             name='Total Quantities Sold'
         )
-    
+
     graphs = st.columns([0.6, 0.4], gap='medium')
-    
+
     with graphs[0]:
         # Top Selling Product Category Distribution (Sales)
         st.plotly_chart(
-            vis.top_selling_product(category_distribution)
+            vis.top_selling_product(category_distribution) #pylint: disable=possibly-used-before-assignment
         )
 
     with graphs[1]:
         with st.container(height=295, border=False):
             st.write('Top-Selling Products')
             # Top-Selling Products
-            st.dataframe(top_products, use_container_width=True)
+            st.dataframe(top_products, use_container_width=True) #pylint: disable=possibly-used-before-assignment
 
         with st.container(height=515, border=False):
             category = st.selectbox(
@@ -288,11 +311,11 @@ with tab[2]:
             )
 
             # Product Type Sales Distribution
-            st.plotly_chart(vis.category_breakdown(grouped, category))
+            st.plotly_chart(vis.category_breakdown(grouped, category)) #pylint: disable=possibly-used-before-assignment
 
 with tab[3]:
     st.header('Store Performance')
-    
+
     button_column = st.columns(2)
     with button_column[0]:
         # Radio Button
@@ -302,7 +325,7 @@ with tab[3]:
             horizontal=True,
             key='Store_Performance'
         )
-    
+
     with button_column[1]:
         # Radio Button
         granularity = st.radio(
@@ -312,7 +335,7 @@ with tab[3]:
             index=2,
             key='Store_Performance_Granulartiy'
         )
-    
+
     # KPIs
     store_performance = filtered_data2.groupby('store_location').agg({
     'total_amount': 'sum',
@@ -321,7 +344,7 @@ with tab[3]:
     })
 
     store_performance.reset_index(inplace=True)
-    
+
     # Data preparation
     lm = filtered_data2[filtered_data2.store_location == 'Lower Manhattan']
     hk = filtered_data2[filtered_data2.store_location == "Hell's Kitchen"]
@@ -331,37 +354,39 @@ with tab[3]:
     lm_avg_ticket_size = lm['total_amount'].sum() / lm['transaction_id'].nunique()
     hk_avg_ticket_size = hk['total_amount'].sum() / hk['transaction_id'].nunique()
     astoria_avg_ticket_size = astoria['total_amount'].sum() / astoria['transaction_id'].nunique()
-    
+
     # Granularity Adjustment
     if granularity == 'Daily':
-        period = 'D'
+        PERIOD = 'D'
     elif granularity == 'Weekly':
-        period = 'W'
+        PERIOD = 'W'
     elif granularity == 'Monthly':
-        period = 'M'
-    
+        PERIOD = 'M'
+
     # Store Comparisions
     if data_option == 'Sales':
-        lm_sales = lm.groupby(lm.transaction_date.dt.to_period(period))['total_amount'].sum()
-        hk_sales = hk.groupby(hk.transaction_date.dt.to_period(period))['total_amount'].sum()
-        astoria_sales = astoria.groupby(astoria.transaction_date.dt.to_period(period))['total_amount'].sum()
-    
+        lm_sales = lm.groupby(lm.transaction_date.dt.to_period(PERIOD))['total_amount'].sum() #pylint: disable=possibly-used-before-assignment
+        hk_sales = hk.groupby(hk.transaction_date.dt.to_period(PERIOD))['total_amount'].sum()
+        astoria_sales = astoria.groupby(
+            astoria.transaction_date.dt.to_period(PERIOD)
+        )['total_amount'].sum()
+
     elif data_option == 'Transactions':
-        lm_sales = lm.groupby(lm.transaction_date.dt.to_period(period)).size()
-        hk_sales = hk.groupby(hk.transaction_date.dt.to_period(period)).size()
-        astoria_sales = astoria.groupby(astoria.transaction_date.dt.to_period(period)).size()
-    
-    # Growth Rates    
-    lm_weekly_growth = lm_sales.pct_change() * 100
-    hk_weekly_growth = hk_sales.pct_change() * 100
-    astoria_weekly_growth = astoria_sales.pct_change() * 100
-    
+        lm_sales = lm.groupby(lm.transaction_date.dt.to_period(PERIOD)).size()
+        hk_sales = hk.groupby(hk.transaction_date.dt.to_period(PERIOD)).size()
+        astoria_sales = astoria.groupby(astoria.transaction_date.dt.to_period(PERIOD)).size()
+
+    # Growth Rates
+    lm_weekly_growth = lm_sales.pct_change() * 100 #pylint: disable=possibly-used-before-assignment
+    hk_weekly_growth = hk_sales.pct_change() * 100 #pylint: disable=possibly-used-before-assignment
+    astoria_weekly_growth = astoria_sales.pct_change() * 100 #pylint: disable=possibly-used-before-assignment
+
     # Store Sales Distribution
     store_sales = [lm_sales.sum(), hk_sales.sum(), astoria_sales.sum()]
     store_labels = ['Lower Manhattan', "Hell's Kitchen", 'Astoria']
-    
+
     graphs = st.columns([0.65, 0.45], gap='medium')
-    
+
     with graphs[0]:
         kpi_columns = st.columns(3, gap='small')
         with st.container():
@@ -374,7 +399,7 @@ with tab[3]:
                     ]):,.2f}',
                     border=True
                 )
-                
+
                 st.metric(
                     label = 'Number of Transactions',
                     value = f'{int(store_performance['transaction_id'].loc[
@@ -382,13 +407,13 @@ with tab[3]:
                     ]):,}',
                     border=True
                 )
-                
+
                 st.metric(
                     label = 'Average Ticket Size',
                     value = f'{astoria_avg_ticket_size:.2f}',
                     border = True
                 )
-                
+
                 st.metric(
                     label = 'Total Quantities Sold',
                     value = f'{int(store_performance['transaction_qty'].loc[
@@ -407,7 +432,7 @@ with tab[3]:
                     ]):,.2f}',
                     border=True
                 )
-                
+
                 st.metric(
                     label = 'Number of Transactions',
                     value = f'{int(store_performance['transaction_id'].loc[
@@ -415,13 +440,13 @@ with tab[3]:
                     ]):,}',
                     border=True
                 )
-                
+
                 st.metric(
                     label = 'Average Ticket Size',
                     value = f'{hk_avg_ticket_size:.2f}',
                     border = True
                 )
-                
+
                 st.metric(
                     label = 'Total Quantities Sold',
                     value = f'{int(store_performance['transaction_qty'].loc[
@@ -440,7 +465,7 @@ with tab[3]:
                     ]):,.2f}',
                     border=True
                 )
-                
+
                 st.metric(
                     label = 'Number of Transactions',
                     value = f'{int(store_performance['transaction_id'].loc[
@@ -448,13 +473,13 @@ with tab[3]:
                     ]):,}',
                     border=True
                 )
-                
+
                 st.metric(
                     label = 'Average Ticket Size',
                     value = f'{hk_avg_ticket_size:.2f}',
                     border = True
                 )
-                
+
                 st.metric(
                     label = 'Total Quantities Sold',
                     value = f'{int(store_performance['transaction_qty'].loc[
@@ -462,7 +487,7 @@ with tab[3]:
                     ]):,}',
                     border = True
                 )
-            
+
         # Growth Rates by Store Location
         st.plotly_chart(
             vis.growth_rate(
@@ -472,13 +497,13 @@ with tab[3]:
                 data_option
             )
         )
-            
+
     with graphs[1]:
         # Store Sales trend
         st.plotly_chart(
             vis.store_sales_trend(lm_sales, hk_sales, astoria_sales, data_option)
         )
-        
+
         # Store Sales Distribution
         st.plotly_chart(
             vis.store_sale_distribution(store_sales, store_labels, data_option)
